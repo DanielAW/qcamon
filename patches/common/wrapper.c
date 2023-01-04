@@ -51,6 +51,17 @@
     #define AT(CHIPVER, FWVER, ADDR)
 #endif
 
+AT(CHIP_VER_QCA, FW_VER_QCA, 0xc3834)
+void
+wlan_main(void *a1, void* a2, void* a3, void *a4)
+VOID_DUMMY
+
+/*
+AT(CHIP_VER_QCA, FW_VER_QCA, 0xc3834)
+int
+wlan_main()
+RETURN_DUMMY
+*/
 
 #undef VOID_DUMMY
 #undef RETURN_DUMMY
