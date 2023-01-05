@@ -106,8 +106,8 @@ compress_parts: segment2_00980000_mod.bin
 	$(Q)cat segment2_00410AA0_comp.bin >> 2nd_segment.bin
 	@printf "\033[0;31m addr: 0x980000 \033[0m\n"
 	$(Q)echo "00009800" | xxd -r -p - >> 2nd_segment.bin
-	@printf "\033[0;31m len: 0x4ff48 \033[0m\n"
-	$(Q)echo "48ff0400" | xxd -r -p - >> 2nd_segment.bin
+	@printf "\033[0;31m len: 0x61032 \033[0m\n"
+	$(Q)echo "32100600" | xxd -r -p - >> 2nd_segment.bin
 	@printf "\033[0;31m segment2_00980000_comp.bin \033[0m\n"
 	$(Q)cat segment2_00980000_comp.bin >> 2nd_segment.bin
 	@printf "\033[0;31m addr: 0xDF5D0 \033[0m\n"
