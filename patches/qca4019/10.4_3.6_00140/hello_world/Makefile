@@ -138,8 +138,9 @@ compress_parts: segment2_00980000_mod.bin
 #	$(Q)echo "0000" | xxd -r -p - >> 2nd_segment.bin
 	$(Q)echo "04009800fdffffff" | xxd -r -p - >> 2nd_segment.bin
 	$(Q)echo "00000000ffffffff" | xxd -r -p - >> 2nd_segment.bin
-	# pad bytes:
-	$(Q)echo "000000" | xxd -r -p - >> $@
+	@printf "\033[0;31m adding padding bytes \033[0m\n"
+	@SGMT_PAD=`stat --printf="%s" 2nd_segment.bin | xargs printf '4-%d%%4\n' | bc |tr -d "\n"`; \
+	dd if=/dev/zero bs=1 count=$$SGMT_PAD >> 2nd_segment.bin
 
 firmware-5.bin: init gen/patch.elf $(FW_PATH)/$(RAM_FILE) gen/nexmon.mk 2nd_segment.bin
 	@printf "\033[0;31m Header ...\033[0m\n"
@@ -150,7 +151,7 @@ firmware-5.bin: init gen/patch.elf $(FW_PATH)/$(RAM_FILE) gen/nexmon.mk 2nd_segm
 	$(Q)cat $(FW_PATH)/segment1.bin >> $@
 	@printf "\033[0;31m Segment #2 (FW Image) ...\033[0m\n"
 	$(Q)echo "03000000" | xxd -r -p - >> $@
-	@printf "\033[0;31m size of Segment #2 0x%x\033[0m\n" `stat --printf="%s" 2nd_segment.bin`
+	@printf "\033[0;31m size of Segment #2 (should be 4 byte aligned) 0x%x\033[0m\n" `stat --printf="%s" 2nd_segment.bin`
 	$(Q)stat --printf="%s" 2nd_segment.bin |xargs printf '000%x' | fold -w2 |tac |tr -d "\n" | xxd -r -p - >> $@
 	$(Q)cat 2nd_segment.bin >> $@
 	$(Q)echo "02000000" | xxd -r -p - >> $@
