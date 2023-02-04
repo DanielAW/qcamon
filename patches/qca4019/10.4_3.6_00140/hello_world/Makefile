@@ -14,12 +14,14 @@ CFLAGS= \
 	-fplugin-arg-nexmon-fwver=$(NEXMON_FW_VERSION_NUM) \
 	-DNEXMON_CHIP=$(NEXMON_CHIP) \
 	-DNEXMON_FW_VERSION=$(NEXMON_FW_VERSION) \
-    -Wall -Werror -O2 -nostdlib -nostartfiles -ffreestanding \
-	-mtext-section-literals -mauto-litpools -mlongcalls\
-	-ffunction-sections -fdata-sections \
+    -Wall -Werror -O3 -nostdlib -nostartfiles -ffreestanding \
+	-mtext-section-literals \
 	-I$(NEXMON_ROOT)/patches/include \
 	-I$(FW_PATH) \
 	-Isrc
+
+#	-ffunction-sections -fdata-sections \
+#	-mtext-section-literals -mauto-litpools \
 
 all: firmware-5.bin
 
@@ -30,7 +32,8 @@ init: FORCE
 obj/%.o: src/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
 	$(Q)cat gen/nexmon.pre 2>>log/error.log | gawk '{ if ($$3 != "$@") print; }' > tmp && mv tmp gen/nexmon.pre
-	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
+#	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
+	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@
 
 obj/%.o: $(NEXMON_ROOT)/patches/common/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
@@ -60,7 +63,8 @@ gen/memory.ld: $(FW_PATH)/definitions.mk
 gen/patch.elf: patch.ld gen/nexmon.ld gen/memory.ld $(OBJS)
 	@printf "\033[0;31m  LINKING OBJECTS\033[0m => %s (details: log/linker.log, log/linker.err)\n" $@
 #	$(Q)$(CC)ld -T $< -o $@ --gc-sections --print-gc-sections -M >>log/linker.log 2>>log/linker.err
-	$(Q)$(CC)ld -T $< -o $@ -M >>log/linker.log 2>>log/linker.err
+#	$(Q)$(CC)ld -T $< -o $@ -M >>log/linker.log 2>>log/linker.err
+	$(Q)$(CC)ld -T $< -o $@
 
 
 #######################################################
@@ -106,8 +110,8 @@ compress_parts: segment2_00980000_mod.bin
 	$(Q)cat segment2_00410AA0_comp.bin >> 2nd_segment.bin
 	@printf "\033[0;31m addr: 0x980000 \033[0m\n"
 	$(Q)echo "00009800" | xxd -r -p - >> 2nd_segment.bin
-	@printf "\033[0;31m len: 0x61032 \033[0m\n"
-	$(Q)echo "32100600" | xxd -r -p - >> 2nd_segment.bin
+	@printf "\033[0;31m len: 0x4ff48 \033[0m\n"
+	$(Q)echo "48ff0400" | xxd -r -p - >> 2nd_segment.bin
 	@printf "\033[0;31m segment2_00980000_comp.bin \033[0m\n"
 	$(Q)cat segment2_00980000_comp.bin >> 2nd_segment.bin
 	@printf "\033[0;31m addr: 0xDF5D0 \033[0m\n"
@@ -140,7 +144,9 @@ compress_parts: segment2_00980000_mod.bin
 	$(Q)echo "00000000ffffffff" | xxd -r -p - >> 2nd_segment.bin
 	@printf "\033[0;31m adding padding bytes \033[0m\n"
 	@SGMT_PAD=`stat --printf="%s" 2nd_segment.bin | xargs printf '4-%d%%4\n' | bc |tr -d "\n"`; \
-	dd if=/dev/zero bs=1 count=$$SGMT_PAD >> 2nd_segment.bin
+	if [ $$SGMT_PAD -ne 4 ]; then \
+		dd if=/dev/zero bs=1 count=$$SGMT_PAD >> 2nd_segment.bin; \
+	fi
 
 firmware-5.bin: init gen/patch.elf $(FW_PATH)/$(RAM_FILE) gen/nexmon.mk 2nd_segment.bin
 	@printf "\033[0;31m Header ...\033[0m\n"

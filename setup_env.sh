@@ -10,7 +10,7 @@ export PLATFORMUNAME=$(uname -m)
 
 export NEXMON_ROOT=$(pwd)
 
-export CC=xtensa-elf-
+export CC=xtensa-esp32-elf-
 export CCPLUGIN=$NEXMON_ROOT/buildtools/gcc-nexmon-plugin/nexmon.so
 export ZLIBFLATE="zlib-flate -compress"
 
