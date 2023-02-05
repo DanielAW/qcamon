@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <string.h>
 #include <arpa/inet.h>
+#include <tree-iterator.h>
+#include <c-tree.h>
 #include <c-family/c-pragma.h>
 
 static tree handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bool *no_add_attr);
@@ -31,6 +33,41 @@ static struct attribute_spec user_attr =
 	.affects_type_identity = false,
 	.handler = handle_nexmon_place_at_attribute,
 };
+
+static void 
+pre_genericize_callback(void *event_data, void *user_data) {
+    tree t = (tree)event_data;
+    char asm_str_start[] = "movi a14, 0 \n \
+                            wsr.litbase a14\n";
+    char asm_str_end[] = "movi a14, 0x408001\n \
+                          wsr.litbase a14\n";
+
+    tree dt = DECL_SAVED_TREE(t);
+    tree body_stmt = BIND_EXPR_BODY(dt);
+    //debug_tree(body);
+    printf("tree code:: %d == %d\n", TREE_CODE(body_stmt), STATEMENT_LIST);
+
+    //for(tree_stmt_iterator i = tsi_start(body_stmt); !tsi_end_p(i); tsi_next(&i)) {
+    //    printf("new statement\n");
+    //    tree stmt = tsi_stmt(i);
+    //}
+    tree s_start = build_string(sizeof(asm_str_start), asm_str_start);
+    tree s_end = build_string(sizeof(asm_str_end), asm_str_end);
+    tree asm_expr_start = build_asm_expr(EXPR_LOCATION(dt), s_start, NULL, NULL, NULL, NULL, true, false);
+    tree asm_expr_end = build_asm_expr(EXPR_LOCATION(dt), s_end, NULL, NULL, NULL, NULL, true, false);
+    tree asm_stmt_start = build_asm_stmt(true, asm_expr_start);
+    tree asm_stmt_end = build_asm_stmt(true, asm_expr_end);
+
+    tree_stmt_iterator i = tsi_start(body_stmt);
+    tsi_link_before(&i, asm_stmt_start, TSI_SAME_STMT);
+    for(i = tsi_start(body_stmt); !tsi_one_before_end_p(i); tsi_next(&i)) {
+    }
+    tsi_link_before(&i, asm_stmt_end, TSI_SAME_STMT);
+    //append_to_statement_list(asm_expr, &body_stmt);
+    printf("------------------------\n");
+    //printf("debug: stmt #%d\n", j);
+    //debug_tree(stmt);
+}
 
 static tree
 handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bool *no_add_attr)
@@ -168,6 +205,7 @@ plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *ver)
 		return -1;
 	}
 
+    //register_callback("nexmon", PLUGIN_PRE_GENERICIZE, pre_genericize_callback, NULL);
 	register_callback("nexmon", PLUGIN_ATTRIBUTES, register_attributes, NULL);
 	register_callback("nexmon", PLUGIN_PRAGMAS, register_pragmas, NULL);
 	register_callback("nexmon", PLUGIN_FINISH, handle_plugin_finish, NULL);
