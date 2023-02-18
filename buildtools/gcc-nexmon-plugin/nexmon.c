@@ -26,7 +26,7 @@ static struct attribute_spec user_attr =
 {
 	.name = "at",
 	.min_length = 1,
-	.max_length = 4,
+	.max_length = 5,
 	.decl_required = true,
 	.type_required = false,
 	.function_type_required = false,
@@ -37,10 +37,10 @@ static struct attribute_spec user_attr =
 static void 
 pre_genericize_callback(void *event_data, void *user_data) {
     tree t = (tree)event_data;
-    char asm_str_start[] = "movi a14, 0 \n \
+    char asm_str_start[] = "rsr.litbase a15\n \
+                            movi a14, 0 \n \
                             wsr.litbase a14\n";
-    char asm_str_end[] = "movi a14, 0x408001\n \
-                          wsr.litbase a14\n";
+    char asm_str_end[] = "wsr.litbase a15\n";
 
     tree dt = DECL_SAVED_TREE(t);
     tree body_stmt = BIND_EXPR_BODY(dt);
@@ -79,6 +79,8 @@ handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bo
 	//const char *attr_name = IDENTIFIER_POINTER(name);
 	//const char *param1_str = TREE_STRING_POINTER(TREE_VALUE(args));
 	const char *region = NULL;
+    const char *patch_file = fwfile;
+    //const char *patch_file = NULL;
 	unsigned int addr = 0;
 	bool is_dummy = false;
 	bool is_region = false;
@@ -106,11 +108,15 @@ handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bo
 			if(tmp_tree != NULL_TREE) {
 				fwver_local = TREE_INT_CST_LOW(TREE_VALUE(tmp_tree));
 			}
+            tmp_tree = TREE_CHAIN(tmp_tree);
+            if(tmp_tree != NULL_TREE && TREE_CODE(TREE_VALUE(tmp_tree)) == STRING_CST) {
+                patch_file = TREE_STRING_POINTER(TREE_VALUE(tmp_tree));
+                printf("file: %s\n", patch_file);
+            }
 		}
 	}
 
-	printf("decl_name: %s\n", decl_name);
-
+	//printf("decl_name: %s\n", decl_name);
 	//printf("attr_name: %s\n", attr_name);
     DECL_COMMON_CHECK (*node)->decl_common.align = 8;
 
@@ -130,13 +136,13 @@ handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bo
 
 	if ((chipver == 0 || chipver_local == 0 || chipver == chipver_local) && (fwver == 0 || fwver_local == 0 || fwver == fwver_local)) {
 		if (is_region) {
-			fprintf(pre_fp, "%s REGION %s %s\n", region, objfile, decl_name);
+			fprintf(pre_fp, "%s REGION %s %s %s\n", region, objfile, decl_name, patch_file);
 		} else if (is_flashpatch) {
-			fprintf(pre_fp, "0x%08x FLASHPATCH %s %s\n", addr, objfile, decl_name);
+			fprintf(pre_fp, "0x%08x FLASHPATCH %s %s %s\n", addr, objfile, decl_name, patch_file);
 		} else if (is_dummy) {
-			fprintf(pre_fp, "0x%08x DUMMY %s %s\n", addr, objfile, decl_name);
+			fprintf(pre_fp, "0x%08x DUMMY %s %s %s\n", addr, objfile, decl_name, patch_file);
 		} else {
-			fprintf(pre_fp, "0x%08x PATCH %s %s\n", addr, objfile, decl_name);
+			fprintf(pre_fp, "0x%08x PATCH %s %s %s\n", addr, objfile, decl_name, patch_file);
 		}
 	}
 
@@ -162,7 +168,7 @@ handle_pragma_targetregion(cpp_reader *dummy)
 
  	if (TREE_STRING_LENGTH (message) > 1) {
 		targetregion = TREE_STRING_POINTER (message);
-		fprintf(pre_fp, "%s TARGETREGION %s\n", targetregion, objfile);
+		fprintf(pre_fp, "%s TARGETREGION %s %s\n", targetregion, objfile, fwfile);
  	}
 }
 
@@ -197,6 +203,7 @@ plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *ver)
 			fwver = (unsigned int) strtol(info->argv[i].value, NULL, 0);
 		}
 	}
+    printf("fw file: %s\n", fwfile);
 
 	pre_fp = fopen(prefile, "a");
 
@@ -205,7 +212,7 @@ plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *ver)
 		return -1;
 	}
 
-    //register_callback("nexmon", PLUGIN_PRE_GENERICIZE, pre_genericize_callback, NULL);
+    register_callback("nexmon", PLUGIN_PRE_GENERICIZE, pre_genericize_callback, NULL);
 	register_callback("nexmon", PLUGIN_ATTRIBUTES, register_attributes, NULL);
 	register_callback("nexmon", PLUGIN_PRAGMAS, register_pragmas, NULL);
 	register_callback("nexmon", PLUGIN_FINISH, handle_plugin_finish, NULL);
