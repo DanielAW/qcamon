@@ -12,15 +12,21 @@ CFLAGS= \
 	-fplugin-arg-nexmon-prefile=gen/nexmon.pre \
 	-fplugin-arg-nexmon-chipver=$(NEXMON_CHIP_NUM) \
 	-fplugin-arg-nexmon-fwver=$(NEXMON_FW_VERSION_NUM) \
+	-fplugin-arg-nexmon-fwfile=segment2_00980000_mod.bin \
 	-DNEXMON_CHIP=$(NEXMON_CHIP) \
 	-DNEXMON_FW_VERSION=$(NEXMON_FW_VERSION) \
     -Wall -Werror -O3 -nostdlib -nostartfiles -ffreestanding \
-	-mtext-section-literals \
+	-ffunction-sections -fdata-sections -mlongcalls -mabi=windowed \
 	-I$(NEXMON_ROOT)/patches/include \
 	-I$(FW_PATH) \
 	-Isrc
 
-#	-ffunction-sections -fdata-sections \
+#   longcalls causes Call relaxiation?
+#   -mlongcalls
+#   -mtext-section-literals \
+# 	Place each function in its own section (produces error:  dangerous relocation: call8: call target out of range: wlan_main )
+#	-ffunction-sections \ 
+#	-fdata-sections \
 #	-mtext-section-literals -mauto-litpools \
 
 all: firmware-5.bin
@@ -33,12 +39,13 @@ obj/%.o: src/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
 	$(Q)cat gen/nexmon.pre 2>>log/error.log | gawk '{ if ($$3 != "$@") print; }' > tmp && mv tmp gen/nexmon.pre
 #	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
-	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@
+	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ -Wa,--qca,test
 
 obj/%.o: $(NEXMON_ROOT)/patches/common/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
 	$(Q)cat gen/nexmon.pre 2>>log/error.log | gawk '{ if ($$3 != "$@") print; }' > tmp && mv tmp gen/nexmon.pre
-	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
+#	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
+	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@
 
 gen/nexmon.ld: $(OBJS)
 	@printf "\033[0;31m  GENERATING LINKER FILE\033[0m gen/nexmon.pre => %s\n" $@
@@ -47,39 +54,54 @@ gen/nexmon.ld: $(OBJS)
 gen/nexmon.mk: $(OBJS) $(FW_PATH)/definitions.mk
 	@printf "\033[0;31m  GENERATING MAKE FILE\033[0m gen/nexmon.pre => %s\n" $@
 #	$(Q)printf "$(RAM_FILE): gen/patch.elf FORCE\n" > $@
-	$(Q)printf "segment2_00980000_mod.bin: gen/patch.elf FORCE\n" > $@
+#	$(Q)printf "segment2_00980000_mod.bin: gen/patch.elf FORCE\n" > $@
+	$(Q)printf "patch.bin: gen/patch.elf FORCE\n" > $@
 	$(Q)sort gen/nexmon.pre | \
 		gawk -v src_file=gen/patch.elf -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.1.awk | \
-		gawk -v ramstart=$(RAMSTART) -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
+		gawk -v ramstart1=0x409200 -v ramstart2=0x980000 -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
+	$(Q)printf '\t$$(CC)objcopy -O binary -j .literal.my_patch $$< gen/section.bin && dd if=gen/section.bin of=segment2_00980000_mod.bin bs=1 conv=notrunc seek=$$$$(($(NEX_LITPOOL_START) - 0x980000))' >> $@
 	$(Q)printf "\nFORCE:\n" >> $@
 	$(Q)gawk '!a[$$0]++' $@ > tmp && mv tmp $@
+
+#gen/nexmon2.mk: $(OBJS) $(FW_PATH)/definitions.mk
+#	@printf "\033[0;31m  GENERATING MAKE FILE\033[0m gen/nexmon.pre => %s\n" $@
+##	$(Q)printf "$(RAM_FILE): gen/patch.elf FORCE\n" > $@
+#	$(Q)printf "segment2_00409200_mod.bin: gen/patch.elf FORCE\n" > $@
+#	$(Q)sort gen/nexmon.pre | \
+#		gawk -v src_file=gen/patch.elf -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.1.awk | \
+#		gawk -v ramstart=0x409200 -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
+#	$(Q)printf "\nFORCE:\n" >> $@
+#	$(Q)gawk '!a[$$0]++' $@ > tmp && mv tmp $@
 
 gen/memory.ld: $(FW_PATH)/definitions.mk
 	@printf "\033[0;31m  GENERATING LINKER FILE\033[0m %s\n" $@
 	$(Q)printf "rom : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(ROMSTART) $(ROMSIZE) > $@
 	$(Q)printf "ram : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(RAMSTART) $(RAMSIZE) >> $@
-	$(Q)printf "patch : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(PATCHSTART) $(PATCHSIZE) >> $@
+#	$(Q)printf "patch : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(PATCHSTART) $(PATCHSIZE) >> $@
+	$(Q)printf "litpool : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(NEX_LITPOOL_START) $(NEX_LITPOOL_SIZE) >> $@
+	$(Q)printf "patch : ORIGIN = 0x009c8200, LENGTH = 0x00000200\n" >> $@
 
 gen/patch.elf: patch.ld gen/nexmon.ld gen/memory.ld $(OBJS)
 	@printf "\033[0;31m  LINKING OBJECTS\033[0m => %s (details: log/linker.log, log/linker.err)\n" $@
 #	$(Q)$(CC)ld -T $< -o $@ --gc-sections --print-gc-sections -M >>log/linker.log 2>>log/linker.err
 #	$(Q)$(CC)ld -T $< -o $@ -M >>log/linker.log 2>>log/linker.err
-	$(Q)$(CC)ld -T $< -o $@
+	$(Q)$(CC)ld -T $< -o $@ --abi-windowed
 
 
 #######################################################
 
-segment2_00980000_mod.bin: 
-	$(Q)cp $(FW_PATH)/segment2_00980000.bin $@
+patch.bin: 
+	$(Q)cp $(FW_PATH)/segment2_00980000.bin segment2_00980000_mod.bin
+	$(Q)cp $(FW_PATH)/segment2_00409200.bin segment2_00409200_mod.bin
 	@printf "\033[0;31m  APPLYING PATCHES\033[0m gen/nexmon.mk => %s (details: log/patches.log)\n" $@
 	$(Q)make -f gen/nexmon.mk >>log/patches.log 2>>log/patches.log
 
-compress_parts: segment2_00980000_mod.bin
+compress_parts: patch.bin
 	@printf "\033[0;31m Compress parts ...\033[0m\n"
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_000C3800.bin segment2_000C3800_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_000DF5D0.bin segment2_000DF5D0_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_000DFEE0.bin segment2_000DFEE0_comp.bin
-	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_00409200_mod.bin segment2_00409200_comp.bin
+	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp segment2_00409200_mod.bin segment2_00409200_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_0040D840.bin segment2_0040D840_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_00410AA0.bin segment2_00410AA0_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp segment2_00980000_mod.bin segment2_00980000_comp.bin
@@ -176,7 +198,12 @@ firmware-5.bin: init gen/patch.elf $(FW_PATH)/$(RAM_FILE) gen/nexmon.mk 2nd_segm
 	$(Q)echo "77" | xxd -r -p - >> $@
 
 clean: FORCE
-	$(Q)rm -r *comp.bin 2nd_segment.bin firmware-5.bin obj gen log segment2_00980000_mod.bin
+	$(Q)rm -r *comp.bin 2nd_segment.bin firmware-5.bin obj gen log segment2_00980000_mod.bin segment2_00409200_mod.bin
+
+prepare:
+	sudo ifconfig enp7s0f3u1u1 192.168.1.177/24
+	ssh habanero "rmmod ath10k_pci && rmmod ath10k_core"
+	ssh habanero "insmod /root/ath10k_core.ko debug_mask=0x432 && insmod /root/ath10k_pci.ko"
 
 install:
 	scp -O -oHostKeyAlgorithms=+ssh-rsa firmware-5.bin habanero:/lib/firmware/ath10k/QCA4019/hw1.0/firmware-5.bin
