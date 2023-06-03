@@ -1,12 +1,4 @@
-#include <gcc-plugin.h>
-#include <tree.h>
-#include <print-tree.h>
-#include <stdio.h>
-#include <string.h>
-#include <arpa/inet.h>
-#include <tree-iterator.h>
-#include <c-tree.h>
-#include <c-family/c-pragma.h>
+#include "gcc-common.h"
 
 static tree handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bool *no_add_attr);
 
@@ -40,33 +32,17 @@ pre_genericize_callback(void *event_data, void *user_data) {
     char asm_str_start[] = "rsr.litbase a15\n \
                             movi a14, 0 \n \
                             wsr.litbase a14\n";
-    char asm_str_end[] = "wsr.litbase a15\n";
 
     tree dt = DECL_SAVED_TREE(t);
     tree body_stmt = BIND_EXPR_BODY(dt);
-    //debug_tree(body);
-    printf("tree code:: %d == %d\n", TREE_CODE(body_stmt), STATEMENT_LIST);
+    //printf("tree code:: %d == %d\n", TREE_CODE(body_stmt), STATEMENT_LIST);
 
-    //for(tree_stmt_iterator i = tsi_start(body_stmt); !tsi_end_p(i); tsi_next(&i)) {
-    //    printf("new statement\n");
-    //    tree stmt = tsi_stmt(i);
-    //}
     tree s_start = build_string(sizeof(asm_str_start), asm_str_start);
-    tree s_end = build_string(sizeof(asm_str_end), asm_str_end);
     tree asm_expr_start = build_asm_expr(EXPR_LOCATION(dt), s_start, NULL, NULL, NULL, NULL, true, false);
-    tree asm_expr_end = build_asm_expr(EXPR_LOCATION(dt), s_end, NULL, NULL, NULL, NULL, true, false);
     tree asm_stmt_start = build_asm_stmt(true, asm_expr_start);
-    tree asm_stmt_end = build_asm_stmt(true, asm_expr_end);
 
     tree_stmt_iterator i = tsi_start(body_stmt);
     tsi_link_before(&i, asm_stmt_start, TSI_SAME_STMT);
-    for(i = tsi_start(body_stmt); !tsi_one_before_end_p(i); tsi_next(&i)) {
-    }
-    tsi_link_before(&i, asm_stmt_end, TSI_SAME_STMT);
-    //append_to_statement_list(asm_expr, &body_stmt);
-    printf("------------------------\n");
-    //printf("debug: stmt #%d\n", j);
-    //debug_tree(stmt);
 }
 
 static tree
@@ -116,23 +92,9 @@ handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bo
 		}
 	}
 
-	//printf("decl_name: %s\n", decl_name);
-	//printf("attr_name: %s\n", attr_name);
-    DECL_COMMON_CHECK (*node)->decl_common.align = 8;
+    DECL_COMMON_CHECK (*node)->decl_common.align = 1;
+    //DECL_COMMON_CHECK (*node)->decl_common.align = 8;
 
-	//printf("align: %d\n", DECL_COMMON_CHECK (*node)->decl_common.align);
-	//if (DECL_COMMON_CHECK (*node)->decl_common.align == 32 && (addr & 1))
-	//	DECL_COMMON_CHECK (*node)->decl_common.align = 8;
-
-	//if (DECL_COMMON_CHECK (*node)->decl_common.align == 32 && (addr & 2))
-	//	DECL_COMMON_CHECK (*node)->decl_common.align = 16;
-	//printf("align: %d\n", DECL_COMMON_CHECK (*node)->decl_common.align);
-
-	//for(itr = args; itr != NULL_TREE; itr = TREE_CHAIN(itr)) {
-	//	printf("arg: %s %08x\n", TREE_STRING_POINTER(TREE_VALUE(itr)), (unsigned int) strtol(TREE_STRING_POINTER(TREE_VALUE(itr)), NULL, 0));
-		//debug_tree(itr);
-		//debug_tree(TREE_VALUE(itr));
-	//}
 
 	if ((chipver == 0 || chipver_local == 0 || chipver == chipver_local) && (fwver == 0 || fwver_local == 0 || fwver == fwver_local)) {
 		if (is_region) {
@@ -146,8 +108,6 @@ handle_nexmon_place_at_attribute(tree *node, tree name, tree args, int flags, bo
 		}
 	}
 
-	//debug_tree(*node);
-	//debug_tree(name);
 	return NULL_TREE;
 }
 
