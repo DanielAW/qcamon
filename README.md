@@ -3,9 +3,11 @@ Based on NEXMON: https://nexmon.org
 
 # Instructions to compile patches
 * set environment variables: `source setup_env.sh`
-* ...
+* unpack GCC
+* unpack binutils
+* compile patches
 
-# Build GCC yourself
+# Optional: Build GCC yourself
 ## Prerequisites
 * ...
 ## Instructions
