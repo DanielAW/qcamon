@@ -20,3 +20,16 @@ Based on NEXMON: https://nexmon.org
 * `make -f Makefile.self_compile install`
 * Copy binutils files into the new GCC folder: `todo`
 * Continue as described above
+
+# Optional: Build Binutls yourself
+## Prerequisites
+* ...
+## Instructions
+* Do _not_ set QCAMON environment variables
+* `cd buildtools/espressif-esp32-gcc`
+* apply patches: `todo`
+* `make -f Makefile.self_compile`
+* `make -f Makefile.self_compile install`
+* set environment variables from root directory: `source ../../setup_env.sh`
+* `make -f Makefile.self_compile install-to-gcc`
+* Continue as described above
