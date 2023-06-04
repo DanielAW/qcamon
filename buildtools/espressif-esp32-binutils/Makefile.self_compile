@@ -2,7 +2,7 @@ dest_dir = $(shell pwd)/binutils-install
 
 .PHONY: all clean prepare unpack install
 
-all:
+all: prepare
 	cd binutils-2.39 &&  ./configure CLFAGS='-ggdb3 -O0' \
 		--target=xtensa-esp32-elf \
 		--with-sysroot=/usr/xtensa-esp32-elf \
