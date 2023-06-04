@@ -1,0 +1,76 @@
+override CFLAGS += -Werror=format-security
+override CXXFLAGS += -Werror=format-security
+
+export CFLAGS_FOR_TARGET=-g \
+	-Os \
+	-ffunction-sections \
+	-fdata-sections \
+	-mlongcalls
+export CXXFLAGS_FOR_TARGET=-g \
+	-Os \
+	-ffunction-sections \
+	-fdata-sections \
+	-mlongcalls
+dest_dir = $(shell pwd)/build-gcc-install
+
+.PHONY: all clean prepare unpack
+
+all: prepare
+	cd build-gcc/ &&  ../gcc-12.2.0/configure \
+		--libexecdir=/usr/lib \
+		--prefix=/usr \
+		--target=xtensa-esp32-elf \
+		--with-gmp \
+		--with-gnu-as \
+		--with-gnu-ld \
+		--with-headers=/usr/xtensa-esp32-elf/include \
+		--with-host-libstdcxx='-static-libgcc -Wl,-Bstatic,-lstdc++,-Bdynamic -lm' \
+		--with-isl \
+		--with-libelf \
+		--with-mpc \
+		--with-mpfr \
+		--with-native-system-header-dir=/include \
+		--with-newlib \
+		--with-python-dir=share/gcc-xtensa-esp32-elf \
+		--with-sysroot=/usr/xtensa-esp32-elf \
+		--with-system-zlib \
+		--without-libffi \
+		--disable-__cxa_atexit \
+		--disable-decimal-float \
+		--disable-libgomp \
+		--disable-libmpx \
+		--disable-libmudflap \
+		--disable-libquadmath \
+		--disable-libquadmath-support \
+		--disable-libssp \
+		--disable-libstdcxx-pch \
+		--disable-libstdcxx-verbose \
+		--disable-nls \
+		--disable-shared \
+		--disable-threads \
+		--disable-tls \
+		--enable-gnu-indirect-function \
+		--enable-languages=c,c++ \
+		--enable-lto \
+		--enable-target-optspace
+	cd build-gcc/ && make INHIBIT_LIBC_CFLAGS='-DUSE_TM_CLONE_REGISTRY=0' -j16
+
+
+prepare: unpack
+	cd gcc-12.2.0 && ln -sf ../isl-0.25 isl
+	echo "12.2.0" > gcc-12.2.0/gcc/BASE-VER
+	# hack! - some configure tests for header files using "$CPP $CPPFLAGS"
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" gcc-12.2.0/{libiberty,gcc}/configure
+	cp -r xtensa-overlays-a5ab689/xtensa_esp32/gcc/* gcc-12.2.0/
+	mkdir -p build-{gcc,gcc-nano}
+
+unpack:
+	tar -xf gcc-12.2.0.tar.xz
+	tar -xf isl-0.25.tar.bz2
+
+install:
+	cd build-gcc/ && make DESTDIR=$(dest_dir) install
+
+clean:
+	rm -r isl-0.25 gcc-12.2.0 build-gcc build-gcc-nano install
+
