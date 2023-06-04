@@ -1,0 +1,43 @@
+dest_dir = $(shell pwd)/binutils-install
+
+.PHONY: all clean prepare unpack install
+
+all:
+	cd binutils-2.39 &&  ./configure CLFAGS='-ggdb3 -O0' \
+		--target=xtensa-esp32-elf \
+		--with-sysroot=/usr/xtensa-esp32-elf \
+		--prefix=/usr \
+		--enable-multilib \
+		--enable-interwork \
+		--with-gnu-as \
+		--with-gnu-ld \
+		--disable-nls \
+		--enable-ld=yes \
+		--enable-gold \
+		--enable-plugins \
+		--enable-deterministic-archives \
+		--disable-sim \
+		--disable-gdb \
+		--disable-nls
+	cd binutils-2.39 && make -j16
+
+prepare: unpack
+	# hack! - some configure tests for header files using "$CPP $CPPFLAGS"
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" binutils-2.39/libiberty/configure
+	cp -r xtensa-overlays-a5ab689/xtensa_esp32/binutils/* binutils-2.39/
+
+unpack:
+	tar -xf binutils-2.39.tar.bz2
+
+install:
+	cd binutils-2.39 && make DESTDIR=$(dest_dir) install
+
+install-to-gcc:
+	cp binutils-install/usr/xtensa-esp32-elf/bin/as $(NEXMON_ROOT)/buildtools/espressif-esp32-gcc/build-gcc-install/usr/lib/gcc/xtensa-esp32-elf/12.2.0/
+	cp binutils-install/usr/xtensa-esp32-elf/bin/ld $(NEXMON_ROOT)/buildtools/espressif-esp32-gcc/build-gcc-install/usr/bin/xtensa-esp32-elf-ld
+	cp binutils-install/usr/xtensa-esp32-elf/bin/objdump $(NEXMON_ROOT)/buildtools/espressif-esp32-gcc/build-gcc-install/usr/bin/xtensa-esp32-elf-objdump
+	cp binutils-install/usr/xtensa-esp32-elf/bin/objcopy $(NEXMON_ROOT)/buildtools/espressif-esp32-gcc/build-gcc-install/usr/bin/xtensa-esp32-elf-objcopy
+
+clean:
+	rm -rf binutils-2.39 binutils-install
+
