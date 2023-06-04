@@ -1,0 +1,20 @@
+diff --git a/binja_xtensa/instruction.py b/binja_xtensa/instruction.py
+index 7243f07..e7f1700 100644
+--- a/binja_xtensa/instruction.py
++++ b/binja_xtensa/instruction.py
+@@ -34,6 +34,8 @@ Link to the Xtensa docs/manual I was referencing:
+ """
+ from enum import Enum
+
++LITBASE = 0x408000 + 0x40001
++
+
+ # https://stackoverflow.com/a/32031543
+ def sign_extend(value, bits):
+@@ -233,7 +235,8 @@ class Instruction:
+
+     def offset_l32r(self, addr):
+         enc = sign_extend(self.imm16 | 0xFFFF0000, 32) << 2
+-        return (enc + addr + 3) & 0xFFFFFFFC
++        return (LITBASE & 0xFFFFF000) + enc
+

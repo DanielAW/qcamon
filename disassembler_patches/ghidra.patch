@@ -1,0 +1,12 @@
+diff --git a/data/languages/xtensa.sinc b/data/languages/xtensa.sinc
+index 80ac9bf..e8ef5c8 100644
+--- a/data/languages/xtensa.sinc
++++ b/data/languages/xtensa.sinc
+@@ -236,7 +236,7 @@ srel_6.23_sb2: rel is s8_6.23 [
+ ] { export *:4 rel; }
+ 
+ srel_8.23_oex_sb2: rel is u16_8.23 [
+-    rel = ((inst_start + 3) & ~3) + ((u16_8.23 | 0xffff0000) << 2);
++    rel = (0x448001 & 0xFFFFF000) + ((u16_8.23 | 0xffff0000) << 2);
+ ] { export *:4 rel; }
+
