@@ -1,0 +1,8 @@
++++ binutils-2.39/gas/qca-param.h	2023-06-04 17:22:24.514616691 +0200
+@@ -0,0 +1,6 @@
++#ifndef __qca_h__
++#define __qca_h__
++
++extern char qca_param[80];
++
++#endif /* __qca_h__ */

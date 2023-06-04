@@ -25,6 +25,10 @@ prepare: unpack
 	# hack! - some configure tests for header files using "$CPP $CPPFLAGS"
 	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" binutils-2.39/libiberty/configure
 	cp -r xtensa-overlays-a5ab689/xtensa_esp32/binutils/* binutils-2.39/
+	# QCAMON patches
+	patch -p1 binutils-2.39/gas/as.c qcamon_patches/as.patch
+	patch -p1 binutils-2.39/gas/qca-param.h qcamon_patches/qca-param.patch
+	patch -p1 binutils-2.39/gas/config/tc-xtensa.c qcamon_patches/tc-xtensa.patch
 
 unpack:
 	tar -xf binutils-2.39.tar.bz2

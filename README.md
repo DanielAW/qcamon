@@ -27,7 +27,6 @@ Based on NEXMON: https://nexmon.org
 ## Instructions
 * Do _not_ set QCAMON environment variables
 * `cd buildtools/espressif-esp32-gcc`
-* apply patches: `todo`
 * `make -f Makefile.self_compile`
 * `make -f Makefile.self_compile install`
 * set environment variables from root directory: `source ../../setup_env.sh`
