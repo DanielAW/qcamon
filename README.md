@@ -2,6 +2,11 @@
 Based on NEXMON: https://nexmon.org
 
 # Instructions to compile patches
+## Prerequisites
+* `build-essential` or similar
+* `gawk`
+* `glibc` >= 2.36 (e.g. in Ubuntu 23.04)
+## Instructions
 * set environment variables: `source setup_env.sh`
 * prepare firmware file and unpack prebuild GCC & binutils:
   * `make`
