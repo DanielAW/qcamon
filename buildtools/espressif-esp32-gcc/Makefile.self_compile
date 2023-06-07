@@ -60,9 +60,11 @@ prepare: unpack
 	cd gcc-12.2.0 && ln -sf ../isl-0.25 isl
 	echo "12.2.0" > gcc-12.2.0/gcc/BASE-VER
 	# hack! - some configure tests for header files using "$CPP $CPPFLAGS"
-	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" gcc-12.2.0/{libiberty,gcc}/configure
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" gcc-12.2.0/libiberty/configure
+	sed -i "/ac_cpp=/s/\$CPPFLAGS/\$CPPFLAGS -O2/" gcc-12.2.0/gcc/configure
 	cp -r xtensa-overlays-a5ab689/xtensa_esp32/gcc/* gcc-12.2.0/
-	mkdir -p build-{gcc,gcc-nano}
+	mkdir -p build-gcc
+	mkdir -p gcc-nano
 
 unpack:
 	tar -xf gcc-12.2.0.tar.xz
