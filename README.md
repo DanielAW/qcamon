@@ -5,6 +5,7 @@ Based on NEXMON: https://nexmon.org
 ## Prerequisites
 * `build-essential` or similar
 * `gawk`
+* `libdebuginfod-dev`
 * `glibc` >= 2.36 (e.g. in Ubuntu 23.04)
 ## Instructions
 * set environment variables: `source setup_env.sh`
