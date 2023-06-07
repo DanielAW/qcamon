@@ -7,6 +7,7 @@ Based on NEXMON: https://nexmon.org
 * `gawk`
 * `libdebuginfod-dev`
 * `glibc` >= 2.36 (e.g. in Ubuntu 23.04)
+* `bc`
 ## Instructions
 * set environment variables: `source setup_env.sh`
 * prepare firmware file and unpack prebuild GCC & binutils:
@@ -29,7 +30,7 @@ Based on NEXMON: https://nexmon.org
 
 # Optional: Build Binutls yourself
 ## Prerequisites
-* ...
+* `texinfo`
 ## Instructions
 * Do _not_ set QCAMON environment variables
 * `cd buildtools/espressif-esp32-gcc`
