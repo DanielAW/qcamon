@@ -39,3 +39,16 @@ Based on NEXMON: https://nexmon.org
 * set environment variables from root directory: `source ../../setup_env.sh`
 * `make -f Makefile.self_compile install-to-gcc`
 * Continue as described above
+
+# Disassembler patches
+## Binary Ninja
+* Patch is based on: https://github.com/zackorndorff/binja-xtensa
+* Commit which is known to work: `e4d61b1a92f0af9990f77c66381a3ca6e281155f`
+* Clone the repository into the Ninja plugins directory
+* Apply patch: https://github.com/DanielAW/qcamon/blob/main/disassembler_patches/binary_ninja.patch
+
+## Ghidra
+* Patch is based on https://github.com/Ebiroll/ghidra-xtensa
+* Commit which is known to work `4e1aa22f76b6350d018094dfedeefe4b9096d9e1`
+* For installation follow instrutions on the github page of the plugin linked above
+* Apply patch: https://github.com/DanielAW/qcamon/blob/main/disassembler_patches/ghidra.patch
