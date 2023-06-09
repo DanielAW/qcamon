@@ -38,14 +38,12 @@ init: FORCE
 obj/%.o: src/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
 	$(Q)cat gen/nexmon.pre 2>>log/error.log | gawk '{ if ($$3 != "$@") print; }' > tmp && mv tmp gen/nexmon.pre
-#	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
-	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ -Wa,--qca,test
+	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ -Wa,--qca,test >>log/compiler.log
 
 obj/%.o: $(NEXMON_ROOT)/patches/common/%.c
 	@printf "\033[0;31m  COMPILING\033[0m %s => %s (details: log/compiler.log)\n" $< $@
 	$(Q)cat gen/nexmon.pre 2>>log/error.log | gawk '{ if ($$3 != "$@") print; }' > tmp && mv tmp gen/nexmon.pre
-#	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
-	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@
+	$(Q)$(CC)gcc $(CFLAGS) -c $< -o $@ >>log/compiler.log
 
 gen/nexmon.ld: $(OBJS)
 	@printf "\033[0;31m  GENERATING LINKER FILE\033[0m gen/nexmon.pre => %s\n" $@
@@ -83,9 +81,7 @@ gen/memory.ld: $(FW_PATH)/definitions.mk
 
 gen/patch.elf: patch.ld gen/nexmon.ld gen/memory.ld $(OBJS)
 	@printf "\033[0;31m  LINKING OBJECTS\033[0m => %s (details: log/linker.log, log/linker.err)\n" $@
-#	$(Q)$(CC)ld -T $< -o $@ --gc-sections --print-gc-sections -M >>log/linker.log 2>>log/linker.err
-#	$(Q)$(CC)ld -T $< -o $@ -M >>log/linker.log 2>>log/linker.err
-	$(Q)$(CC)ld -T $< -o $@ --abi-windowed
+	$(Q)$(CC)ld -T $< -o $@ --abi-windowed  >>log/linker.log 2>>log/linker.err
 
 
 #######################################################
