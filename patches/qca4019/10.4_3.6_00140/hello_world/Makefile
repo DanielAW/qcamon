@@ -21,14 +21,6 @@ CFLAGS= \
 	-I$(FW_PATH) \
 	-Isrc
 
-#   longcalls causes Call relaxiation?
-#   -mlongcalls
-#   -mtext-section-literals \
-# 	Place each function in its own section (produces error:  dangerous relocation: call8: call target out of range: wlan_main )
-#	-ffunction-sections \ 
-#	-fdata-sections \
-#	-mtext-section-literals -mauto-litpools \
-
 all: firmware-5.bin
 
 init: FORCE
@@ -51,8 +43,6 @@ gen/nexmon.ld: $(OBJS)
 
 gen/nexmon.mk: $(OBJS) $(FW_PATH)/definitions.mk
 	@printf "\033[0;31m  GENERATING MAKE FILE\033[0m gen/nexmon.pre => %s\n" $@
-#	$(Q)printf "$(RAM_FILE): gen/patch.elf FORCE\n" > $@
-#	$(Q)printf "segment2_00980000_mod.bin: gen/patch.elf FORCE\n" > $@
 	$(Q)printf "patch.bin: gen/patch.elf FORCE\n" > $@
 	$(Q)sort gen/nexmon.pre | \
 		gawk -v src_file=gen/patch.elf -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.1.awk | \
@@ -60,16 +50,6 @@ gen/nexmon.mk: $(OBJS) $(FW_PATH)/definitions.mk
 	$(Q)printf '\t$$(CC)objcopy -O binary -j .literal.my_patch $$< gen/section.bin && dd if=gen/section.bin of=segment2_00980000_mod.bin bs=1 conv=notrunc seek=$$$$(($(NEX_LITPOOL_START) - 0x980000))' >> $@
 	$(Q)printf "\nFORCE:\n" >> $@
 	$(Q)gawk '!a[$$0]++' $@ > tmp && mv tmp $@
-
-#gen/nexmon2.mk: $(OBJS) $(FW_PATH)/definitions.mk
-#	@printf "\033[0;31m  GENERATING MAKE FILE\033[0m gen/nexmon.pre => %s\n" $@
-##	$(Q)printf "$(RAM_FILE): gen/patch.elf FORCE\n" > $@
-#	$(Q)printf "segment2_00409200_mod.bin: gen/patch.elf FORCE\n" > $@
-#	$(Q)sort gen/nexmon.pre | \
-#		gawk -v src_file=gen/patch.elf -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.1.awk | \
-#		gawk -v ramstart=0x409200 -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
-#	$(Q)printf "\nFORCE:\n" >> $@
-#	$(Q)gawk '!a[$$0]++' $@ > tmp && mv tmp $@
 
 gen/memory.ld: $(FW_PATH)/definitions.mk
 	@printf "\033[0;31m  GENERATING LINKER FILE\033[0m %s\n" $@
@@ -101,7 +81,6 @@ compress_parts: patch.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_0040D840.bin segment2_0040D840_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp $(FW_PATH)/segment2_00410AA0.bin segment2_00410AA0_comp.bin
 	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp segment2_00980000_mod.bin segment2_00980000_comp.bin
-#	$(Q)$(NEXMON_ROOT)/buildtools/scripts/ath10k_comp patch_space.bin patch_space_comp.bin
 
 2nd_segment.bin: compress_parts
 	@printf "\033[0;31m SGMT \033[0m\n"
@@ -150,14 +129,6 @@ compress_parts: patch.bin
 	$(Q)echo "C1BD0100" | xxd -r -p - >> 2nd_segment.bin
 	@printf "\033[0;31m segment2_000C3800_comp.bin \033[0m\n"
 	$(Q)cat segment2_000C3800_comp.bin >> 2nd_segment.bin
-#	@printf "\033[0;31m addr: 0x9E0000 \033[0m\n"
-#	$(Q)echo "00009E00" | xxd -r -p - >> 2nd_segment.bin
-#	@printf "\033[0;31m len: 0x200 \033[0m\n"
-#	$(Q)echo "00020000" | xxd -r -p - >> 2nd_segment.bin
-#	@printf "\033[0;31m patch_space_comp.bin \033[0m\n"
-#	$(Q)cat patch_space_comp.bin >> 2nd_segment.bin
-#	@printf "\033[0;31m Adding filler 00 bytes \033[0m\n"
-#	$(Q)echo "0000" | xxd -r -p - >> 2nd_segment.bin
 	$(Q)echo "04009800fdffffff" | xxd -r -p - >> 2nd_segment.bin
 	$(Q)echo "00000000ffffffff" | xxd -r -p - >> 2nd_segment.bin
 	@printf "\033[0;31m adding padding bytes \033[0m\n"
