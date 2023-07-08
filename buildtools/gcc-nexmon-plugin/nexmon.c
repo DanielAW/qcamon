@@ -29,10 +29,18 @@ static struct attribute_spec user_attr =
 static void 
 pre_genericize_callback(void *event_data, void *user_data) {
     tree t = (tree)event_data;
+	const char *decl_name = IDENTIFIER_POINTER(DECL_NAME(t));
+    const char *call8 = "call8_";
     char asm_str_start[] = "rsr.litbase a15\n \
                             movi a14, 0 \n \
                             wsr.litbase a14\n";
 
+    printf("FUNCTION NAME: %s\n", decl_name);
+
+    /* Ignore functions which starts with "call8_", those are just dummies */
+    if(strncmp(call8, decl_name, strlen(call8)) == 0) {
+        return;
+    }
     tree dt = DECL_SAVED_TREE(t);
     tree body_stmt = BIND_EXPR_BODY(dt);
     //printf("tree code:: %d == %d\n", TREE_CODE(body_stmt), STATEMENT_LIST);
@@ -161,7 +169,7 @@ plugin_init(struct plugin_name_args *info, struct plugin_gcc_version *ver)
 			chipver = (unsigned int) strtol(info->argv[i].value, NULL, 0);
 		} else if (!strcmp(info->argv[i].key, "fwver")) {
 			fwver = (unsigned int) strtol(info->argv[i].value, NULL, 0);
-		}
+        }
 	}
     printf("fw file: %s\n", fwfile);
 
