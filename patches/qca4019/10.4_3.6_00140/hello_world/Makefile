@@ -55,9 +55,8 @@ gen/memory.ld: $(FW_PATH)/definitions.mk
 	@printf "\033[0;31m  GENERATING LINKER FILE\033[0m %s\n" $@
 	$(Q)printf "rom : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(ROMSTART) $(ROMSIZE) > $@
 	$(Q)printf "ram : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(RAMSTART) $(RAMSIZE) >> $@
-#	$(Q)printf "patch : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(PATCHSTART) $(PATCHSIZE) >> $@
+	$(Q)printf "patch : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(PATCHSTART) $(PATCHSIZE) >> $@
 	$(Q)printf "litpool : ORIGIN = 0x%08x, LENGTH = 0x%08x\n" $(NEX_LITPOOL_START) $(NEX_LITPOOL_SIZE) >> $@
-	$(Q)printf "patch : ORIGIN = 0x009c8200, LENGTH = 0x00000200\n" >> $@
 
 gen/patch.elf: patch.ld gen/nexmon.ld gen/memory.ld $(OBJS)
 	@printf "\033[0;31m  LINKING OBJECTS\033[0m => %s (details: log/linker.log, log/linker.err)\n" $@
