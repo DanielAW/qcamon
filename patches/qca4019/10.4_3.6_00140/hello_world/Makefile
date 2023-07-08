@@ -46,7 +46,7 @@ gen/nexmon.mk: $(OBJS) $(FW_PATH)/definitions.mk
 	$(Q)printf "patch.bin: gen/patch.elf FORCE\n" > $@
 	$(Q)sort gen/nexmon.pre | \
 		gawk -v src_file=gen/patch.elf -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.1.awk | \
-		gawk -v ramstart1=0x409200 -v ramstart2=0x980000 -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
+		gawk -f $(NEXMON_ROOT)/buildtools/scripts/nexmon.mk.2.awk >> $@
 	$(Q)printf '\t$$(CC)objcopy -O binary -j .literal.my_patch $$< gen/section.bin && dd if=gen/section.bin of=segment2_00980000_mod.bin bs=1 conv=notrunc seek=$$$$(($(NEX_LITPOOL_START) - 0x980000))' >> $@
 	$(Q)printf "\nFORCE:\n" >> $@
 	$(Q)gawk '!a[$$0]++' $@ > tmp && mv tmp $@
